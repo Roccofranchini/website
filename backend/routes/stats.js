@@ -11,24 +11,40 @@ router.get('/unemployment/trend', async (req, res) => {
     const startDate = new Date();
     startDate.setFullYear(startDate.getFullYear() - parseInt(years));
 
+    // Preferisci dati Eurostat (15-74) se disponibili, altrimenti usa simulati (15-64)
     const stats = await prisma.unemploymentStats.findMany({
       where: {
         territory: { contains: territory },
         date: { gte: startDate },
         gender: 'T',
-        ageGroup: { contains: '15-64' }
+        OR: [
+          { ageGroup: '15-74' },  // Dati Eurostat (priorit)
+          { ageGroup: '15-64' }   // Dati simulati (fallback)
+        ]
       },
       orderBy: { date: 'asc' },
       select: {
         date: true,
         rate: true,
-        territory: true
+        territory: true,
+        ageGroup: true
       }
     });
 
+    // Rimuovi duplicati: preferisci 15-74 se esiste per la stessa data
+    const uniqueStats = stats.reduce((acc, curr) => {
+      const key = curr.date.toISOString();
+      if (!acc[key] || curr.ageGroup === '15-74') {
+        acc[key] = curr;
+      }
+      return acc;
+    }, {});
+    
+    const finalStats = Object.values(uniqueStats).map(({ ageGroup, ...rest }) => rest);
+
     res.json({
       territory,
-      data: stats
+      data: finalStats
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
