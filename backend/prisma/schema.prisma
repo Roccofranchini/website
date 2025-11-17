@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UnemploymentStats {
+  id        Int      @id @default(autoincrement())
+  territory String
+  date      DateTime
+  rate      Float
+  ageGroup  String
+  gender    String
+  createdAt DateTime @default(now())
+  
+  @@unique([territory, date, ageGroup, gender])
+  @@index([territory, date])
+  @@map("unemployment_stats")
+}
+
+model Business {
+  id        Int      @id @default(autoincrement())
+  osmId     BigInt   @unique
+  type      String
+  name      String
+  lat       Float
+  lon       Float
+  address   String?
+  quarter   String?
+  createdAt DateTime @default(now())
+  
+  @@index([lat, lon])
+  @@index([quarter])
+  @@map("businesses")
+}
+
+model JobListing {
+  id          Int      @id @default(autoincrement())
+  title       String
+  company     String
+  location    String
+  description String?  @db.Text
+  url         String   @unique
+  lat         Float?
+  lon         Float?
+  postedDate  String
+  sector      String?
+  scrapedAt   DateTime @default(now())
+  
+  @@index([scrapedAt])
+  @@index([sector])
+  @@map("job_listings")
+}
+
+model Quarter {
+  id                  Int     @id @default(autoincrement())
+  name                String  @unique
+  bounds              String  @db.Text
+  estimatedPopulation Int?
+  
+  @@map("quarters")
+}
+
+model LivabilityStats {
+  id                   Int      @id @default(autoincrement())
+  date                 DateTime
+  avgRentPrice         Float?   // Prezzo medio affitto al mq
+  avgHousePrice        Float?   // Prezzo medio case al mq
+  costOfLivingIndex    Float?   // Indice costo della vita (base 100)
+  transportCost        Float?   // Costo trasporto mensile
+  groceriesCost        Float?   // Spesa alimentare media mensile
+  createdAt            DateTime @default(now())
+  
+  @@index([date])
+  @@map("livability_stats")
+}
